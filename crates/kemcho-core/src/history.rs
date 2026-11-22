@@ -1,6 +1,7 @@
 use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
@@ -22,6 +23,8 @@ pub struct Entry {
 /// Dictation history as JSON lines, kept for a fixed number of days.
 pub struct History {
     path: PathBuf,
+    /// Serializes appends with rewrites so neither loses the other's entries.
+    lock: Mutex<()>,
 }
 
 pub fn now_ms() -> u64 {
@@ -39,10 +42,12 @@ impl History {
     pub fn at(path: impl AsRef<Path>) -> Self {
         Self {
             path: path.as_ref().to_path_buf(),
+            lock: Mutex::new(()),
         }
     }
 
     pub fn append(&self, entry: &Entry) -> Result<()> {
+        let _guard = self.lock.lock().unwrap_or_else(|e| e.into_inner());
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
@@ -75,6 +80,7 @@ impl History {
     }
 
     fn rewrite(&self, keep: impl Fn(&Entry) -> bool) -> Result<()> {
+        let _guard = self.lock.lock().unwrap_or_else(|e| e.into_inner());
         let mut entries = self.list()?;
         entries.reverse();
         let tmp = self.path.with_extension("jsonl.tmp");
