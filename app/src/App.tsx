@@ -308,6 +308,7 @@ function Agent({
             ollama.com
           </a>
           , open it, then check again.
+          {agent.error && <div className="muted">{agent.error}</div>}
           <button className="primary" onClick={refresh}>
             Check again
           </button>
