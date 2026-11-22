@@ -8,6 +8,7 @@ import {
   type AgentStatus,
   type AppInfo,
   type Entry,
+  type Language,
   type ModelInfo,
   type Progress,
   type PullProgress,
@@ -625,9 +626,18 @@ function General({
   refreshModels: () => void;
 }) {
   const [mics, setMics] = useState<string[]>([]);
+  const [languages, setLanguages] = useState<Language[]>([]);
   useEffect(() => {
     api.listMicrophones().then(setMics);
+    api.listLanguages().then(setLanguages);
   }, []);
+  const language = languages.find((l) => l.id === settings.language);
+  const usable = models.filter(
+    (m) =>
+      !language ||
+      m.languages.length === 0 ||
+      m.languages.includes(language.whisper),
+  );
 
   const verb = settings.shortcut_mode === "hold" ? "Hold" : "Press";
   const phaseLabel = PHASE_LABELS[status.phase];
@@ -723,9 +733,36 @@ function General({
         />
       </Row>
 
+      <h2>Language</h2>
+      <Row title="I speak" hint={language?.hint || undefined}>
+        <select
+          value={settings.language}
+          onChange={(e) => {
+            const next = languages.find((l) => l.id === e.target.value);
+            if (!next) return;
+            const current = models.find((m) => m.id === settings.model);
+            const fits =
+              current &&
+              (current.languages.length === 0 ||
+                current.languages.includes(next.whisper));
+            save({
+              ...settings,
+              language: next.id,
+              model: fits ? settings.model : next.default_model,
+            });
+          }}
+        >
+          {languages.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
+            </option>
+          ))}
+        </select>
+      </Row>
+
       <h2>Speech model</h2>
       <div className="models">
-        {models.map((m) => {
+        {usable.map((m) => {
           const pct = progress[m.id];
           const selected = m.id === settings.model;
           return (
@@ -735,13 +772,7 @@ function General({
                   type="radio"
                   name="model"
                   checked={selected}
-                  onChange={() =>
-                    save({
-                      ...settings,
-                      model: m.id,
-                      language: m.english_only ? "en" : settings.language,
-                    })
-                  }
+                  onChange={() => save({ ...settings, model: m.id })}
                 />
                 <div>
                   <div className="row-title">
@@ -781,22 +812,6 @@ function General({
           );
         })}
       </div>
-      {!models.find((m) => m.id === settings.model)?.english_only && (
-        <Row
-          title="Language"
-          hint="Multilingual models only. Gujarati support is coming next."
-        >
-          <select
-            value={settings.language}
-            onChange={(e) => save({ ...settings, language: e.target.value })}
-          >
-            <option value="auto">Detect automatically</option>
-            <option value="en">English</option>
-            <option value="gu">Gujarati (ગુજરાતી)</option>
-            <option value="hi">Hindi (हिन्दी)</option>
-          </select>
-        </Row>
-      )}
     </section>
   );
 }

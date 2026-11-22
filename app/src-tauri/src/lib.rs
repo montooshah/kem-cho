@@ -12,7 +12,7 @@ use kemcho_core::history::{self, Entry, History};
 use kemcho_core::models::{self, Model};
 use kemcho_core::settings::{Settings, ShortcutMode};
 use kemcho_core::transcribe::Options;
-use kemcho_core::{Transcriber, audio, postprocess, vad};
+use kemcho_core::{Transcriber, audio, languages, postprocess, vad};
 use serde::Serialize;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::TrayIconBuilder;
@@ -400,7 +400,15 @@ fn save_settings(
         let _ = register_shortcuts(&app, &previous);
         return Err(err);
     }
-    models::find(&settings.model).map_err(|e| e.to_string())?;
+    let model = models::find(&settings.model).map_err(|e| e.to_string())?;
+    let language = languages::find(&settings.language)
+        .ok_or_else(|| format!("unknown language `{}`", settings.language))?;
+    if !model.supports(language.whisper) {
+        return Err(format!(
+            "{} can't transcribe {}",
+            model.label, language.label
+        ));
+    }
     settings
         .save()
         .map_err(|e| format!("saving settings: {e:#}"))?;
@@ -426,6 +434,11 @@ fn suspend_shortcut(app: AppHandle, state: State<AppState>, suspended: bool) -> 
         let settings = state.settings.lock().unwrap().clone();
         register_shortcuts(&app, &settings)
     }
+}
+
+#[tauri::command]
+fn list_languages() -> &'static [languages::Language] {
+    languages::LANGUAGES
 }
 
 #[tauri::command]
@@ -658,6 +671,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             get_settings,
+            list_languages,
             save_settings,
             suspend_shortcut,
             list_models,

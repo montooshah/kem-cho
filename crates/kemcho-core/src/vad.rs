@@ -8,32 +8,29 @@ fn rms(frame: &[f32]) -> f32 {
     (frame.iter().map(|s| s * s).sum::<f32>() / frame.len().max(1) as f32).sqrt()
 }
 
-/// Threshold adapts to the clip's noise floor but never drops below `min_rms`.
-fn threshold(frames: &[f32], min_rms: f32) -> f32 {
+/// Frames this far above the clip's noise floor count as voiced.
+fn floor(frames: &[f32]) -> f32 {
     let mut sorted = frames.to_vec();
     sorted.sort_by(|a, b| a.total_cmp(b));
-    let floor = sorted.get(sorted.len() / 10).copied().unwrap_or(0.0);
-    (floor * 3.0).max(min_rms)
+    sorted.get(sorted.len() / 10).copied().unwrap_or(0.0) * 3.0
 }
 
 /// Returns the speech span of a 16 kHz clip, or `None` when it holds no speech.
+///
+/// A clip counts as speech once a few frames pass `min_rms`, but its edges are
+/// found with a lower bar so quiet words at the end of a sentence are kept.
 pub fn trim(samples: &[f32], min_rms: f32) -> Option<&[f32]> {
     let energies: Vec<f32> = samples.chunks(FRAME).map(rms).collect();
-    let t = threshold(&energies, min_rms);
-    let voiced: Vec<usize> = energies
-        .iter()
-        .enumerate()
-        .filter(|(_, e)| **e > t)
-        .map(|(i, _)| i)
-        .collect();
-    // At least ~90 ms of voiced frames counts as speech.
-    if voiced.len() < 3 {
+    let floor = floor(&energies);
+    // At least ~90 ms of loud frames counts as speech.
+    if energies.iter().filter(|e| **e > floor.max(min_rms)).count() < 3 {
         return None;
     }
-    let first = voiced[0].saturating_sub(PAD_FRAMES);
-    let last = (voiced[voiced.len() - 1] + PAD_FRAMES + 1).min(energies.len());
-    let start = first * FRAME;
-    let end = (last * FRAME).min(samples.len());
+    let edge = floor.max(min_rms / 4.0);
+    let first = energies.iter().position(|e| *e > edge)?;
+    let last = energies.iter().rposition(|e| *e > edge)?;
+    let start = first.saturating_sub(PAD_FRAMES) * FRAME;
+    let end = ((last + PAD_FRAMES + 1) * FRAME).min(samples.len());
     Some(&samples[start..end])
 }
 
@@ -60,5 +57,17 @@ mod tests {
         }
         let speech = trim(&clip, DEFAULT_MIN_RMS).unwrap();
         assert!(speech.len() >= 8_000 && speech.len() < 16_000);
+    }
+
+    #[test]
+    fn keeps_quiet_ending() {
+        let tone = |amp: f32| (0..8_000).map(move |i| (i as f32 * 0.1).sin() * amp);
+        let clip: Vec<f32> = std::iter::repeat_n(0.0, 8_000)
+            .chain(tone(0.3))
+            .chain(tone(0.006))
+            .chain(std::iter::repeat_n(0.0, 8_000))
+            .collect();
+        let speech = trim(&clip, DEFAULT_MIN_RMS).unwrap();
+        assert!(speech.len() >= 16_000, "{}", speech.len());
     }
 }
