@@ -741,8 +741,11 @@ function General({
             const next = languages.find((l) => l.id === e.target.value);
             if (!next) return;
             const current = models.find((m) => m.id === settings.model);
+            // A model the person picked themselves is kept when it fits; the
+            // old language's default gives way to the new language's default.
             const fits =
               current &&
+              current.id !== language?.default_model &&
               (current.languages.length === 0 ||
                 current.languages.includes(next.whisper));
             save({
