@@ -1,0 +1,27 @@
+[package]
+name = "kem-cho"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Kem Cho: local voice dictation"
+
+[lib]
+name = "kem_cho_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+anyhow = "1.0.104"
+arboard = "3"
+enigo = "0.6"
+kemcho-core = { version = "0.1.0", path = "../../crates/kemcho-core" }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-api"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-single-instance = "2"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+whisper-rs = { version = "0.16", features = ["tracing_backend"] }
