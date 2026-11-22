@@ -382,6 +382,7 @@ fn speak_system(rx: Receiver<String>, cancel: Arc<AtomicBool>) -> Result<()> {
         loop {
             if cancel.load(Ordering::Relaxed) {
                 let _ = child.kill();
+                let _ = child.wait();
                 break;
             }
             if child.try_wait()?.is_some() {
