@@ -242,7 +242,17 @@ fn run(
     samples: &[f32],
     raw: bool,
 ) -> Result<String> {
-    let m = models::find(model.as_deref().unwrap_or(&settings.model))?;
+    let language = language.unwrap_or_else(|| settings.language.clone());
+    // Without --model, use the saved model if it fits the language, else the language's default.
+    let model = model.unwrap_or_else(|| {
+        Settings {
+            language: language.clone(),
+            ..settings.clone()
+        }
+        .normalized()
+        .model
+    });
+    let m = models::find(&model)?;
     if !m.is_installed() {
         download(m)?;
     }
@@ -250,7 +260,6 @@ fn run(
         bail!("no speech detected");
     };
     let transcriber = Transcriber::load(m)?;
-    let language = language.unwrap_or_else(|| settings.language.clone());
     let out = transcriber.transcribe(
         speech,
         &Options {
