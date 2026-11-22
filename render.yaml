@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: kem-cho
+    runtime: static
+    rootDir: site
+    buildCommand: echo "static site, nothing to build"
+    staticPublishPath: .

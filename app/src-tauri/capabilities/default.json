@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Kem Cho's windows",
+  "windows": ["main", "hud"],
+  "permissions": ["core:default"]
+}
