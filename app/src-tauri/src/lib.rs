@@ -492,6 +492,10 @@ fn history_list(state: State<AppState>, query: Option<String>) -> Result<Vec<Ent
     let Some(h) = &state.history else {
         return Ok(Vec::new());
     };
+    let days = state.settings.lock().unwrap().history_days;
+    if let Err(err) = h.prune(days) {
+        tracing::warn!("pruning history: {err:#}");
+    }
     match query.filter(|q| !q.trim().is_empty()) {
         Some(q) => h.search(&q),
         None => h.list(),
