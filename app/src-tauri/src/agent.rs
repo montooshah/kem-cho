@@ -125,7 +125,9 @@ fn reply(app: &AppHandle, id: u64, question: &str) -> anyhow::Result<String> {
             start_speaking(app);
             speech.say(&rest);
         }
-        speech.finish()?;
+        if let Err(err) = speech.finish() {
+            let _ = app.emit("agent-warning", format!("{err:#}"));
+        }
     }
     reply
 }
