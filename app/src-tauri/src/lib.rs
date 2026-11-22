@@ -291,14 +291,6 @@ fn finish(app: &AppHandle) -> anyhow::Result<Option<Entry>> {
         return Ok(None);
     };
     let settings = state.settings.lock().unwrap().clone();
-    {
-        let mut paster = state.paster.lock().unwrap();
-        if settings.paste {
-            paster.paste(&text, settings.restore_clipboard)?;
-        } else {
-            paster.copy(&text)?;
-        }
-    }
     let entry = Entry {
         id: history::now_ms(),
         text,
@@ -307,11 +299,20 @@ fn finish(app: &AppHandle) -> anyhow::Result<Option<Entry>> {
         audio_ms,
         transcribe_ms,
     };
+    // Saved before pasting so a clipboard failure doesn't lose the text.
     if settings.history_days > 0
         && let Some(h) = &state.history
         && let Err(err) = h.append(&entry)
     {
         tracing::warn!("saving history: {err:#}");
+    }
+    {
+        let mut paster = state.paster.lock().unwrap();
+        if settings.paste {
+            paster.paste(&entry.text, settings.restore_clipboard)?;
+        } else {
+            paster.copy(&entry.text)?;
+        }
     }
     Ok(Some(entry))
 }
