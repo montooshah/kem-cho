@@ -1,0 +1,165 @@
+/* Page CSS: only what sits inside a visual and the kit lacks. */
+:lang(hi), :lang(gu) { font-family: "Noto Sans Indic", var(--font-text); }
+kbd { font: 500 .82em/1 var(--font-mono); padding: .2em .45em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; background: var(--bg); color: var(--ink); white-space: nowrap; }
+.menu-card .panel { --p-h: 200px; }
+#languages .panel { --p-h: 250px; }
+#agent .panel { --p-h: 360px; }
+@media (max-width: 1023px) { #languages .panel { --p-h: 190px; } #agent .panel { --p-h: 300px; } }
+@media (max-width: 639px) { #languages .panel { --p-h: 132px; } }
+
+/* the privacy statement's three local parts */
+.kc-priv { row-gap: var(--s-6); margin-top: var(--s-6); align-items: start; }
+.kc-priv .mo-la__sub { margin-top: 0; }
+.kc-local { margin: 0; display: grid; align-content: start; }
+.kc-local > div { display: flex; justify-content: space-between; gap: var(--s-4); padding: 12px 0; }
+.kc-local > div + div { border-top: 1px solid var(--line); }
+.kc-local > div:first-child { padding-top: 0; }
+.kc-local dt { color: var(--muted); }
+.kc-local dd { margin: 0; font-weight: 500; color: var(--ink); text-align: right; }
+.hero--centred .hero__lead, #private .mo-la__sub { color: var(--ink); }
+
+/* the hero's window: a notes app taking a dictation */
+.kc-win { background: #fffdfb; color: #241b17; border-radius: 14px; overflow: hidden; font: 400 14px/1.5 var(--font-text); box-shadow: 0 0 0 1px rgb(36 27 23 / .1), 0 24px 48px -28px rgb(36 27 23 / .4); text-align: left; }
+.kc-win__bar { display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 14px; border-bottom: 1px solid rgb(36 27 23 / .08); font-size: 13px; color: #6e6661; }
+.kc-win__bar b { font-weight: 500; color: #241b17; }
+.kc-win__bar .sp { flex: 1; }
+.kc-win__dots { display: flex; gap: 6px; }
+.kc-win__dots i { width: 10px; height: 10px; border-radius: 50%; background: rgb(36 27 23 / .14); }
+.kc-win__body { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 420px; }
+.kc-notes { display: grid; align-content: start; gap: 2px; padding: 10px; border-right: 1px solid rgb(36 27 23 / .08); }
+.kc-notes .t { display: grid; gap: 1px; padding: 9px 10px; border-radius: 9px; font-size: 13px; }
+.kc-notes .t.is-on { background: rgb(36 27 23 / .06); }
+.kc-notes .t b { font-weight: 500; }
+.kc-notes .t span { color: #6e6661; }
+@media (max-width: 1279px), (max-height: 820px) { .kc-notes .t:nth-child(n+3) { display: none; } }
+.kc-note { display: grid; align-content: start; justify-items: start; gap: 10px; padding: 19px 20px; min-width: 0; }
+.kc-note__line { margin: 0; font-size: 15px; line-height: 1.5; }
+.kc-note__line--new { padding-left: 10px; border-left: 2px solid var(--accent); }
+.kc-say { display: flex; align-items: center; gap: 10px; max-width: 100%; min-height: 34px; padding: 6px 14px 6px 12px; border-radius: 17px; background: #241b17; color: #fbf7f3; font-size: 13px; }
+.kc-say__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.kc-say__wave { flex: none; display: flex; align-items: center; gap: 2px; height: 18px; }
+.kc-say__wave i { width: 2px; height: calc(var(--h) * 1px); border-radius: 2px; background: currentColor; opacity: .7; }
+.kc-say__heard { min-width: 0; }
+.kc-tool { font-size: 13px; color: #6e6661; }
+.kc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.kc-acts span { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 99px; font-size: 13px; font-weight: 500; background: rgb(36 27 23 / .06); }
+@media (max-width: 639px) {
+  .kc-win__body { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .kc-notes, .kc-win__hint, .kc-tool { display: none; }
+  .kc-note { padding: 12px 14px; gap: 8px; }
+}
+
+/* one typed sentence, as the app pastes it */
+.kc-out { width: 300px; padding: 14px 16px; display: grid; gap: 10px; text-align: left; }
+.kc-out--wide { width: 620px; }
+.kc-out__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kc-out__meta { font-size: 13px; color: var(--u-muted); white-space: nowrap; }
+.kc-out__text { margin: 0; font-size: 15px; line-height: 1.55; color: var(--u-ink); }
+.kc-out__text--lg { font-size: 18px; line-height: 1.5; }
+.kc-out__text--xl { font-size: 26px; line-height: 1.45; }
+
+/* the app frame (sections-library.md, app-frame) */
+.app.ui { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); margin-top: var(--s-7); background: var(--u-bg); border: 1px solid var(--u-border); border-radius: var(--u-r); box-shadow: var(--u-shadow); }
+.app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+.app > .app__pane + .app__pane { border-left: 1px solid var(--u-line); }
+.app > .app__pane > .ui-panel { width: 100%; border: 0; border-radius: 0; box-shadow: none; }
+.app > .app__pane::after { content: ""; position: absolute; inset: auto 0 0 0; height: 64px; background: linear-gradient(transparent, var(--u-bg)); pointer-events: none; }
+@media (min-width: 1024px) and (max-width: 1279px) { .app.ui { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); } }
+@media (max-width: 1023px) {
+  .app.ui { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
+  .app > .app__pane--list { max-height: 252px; }
+  .app > .app__pane--list::after { display: none; }
+  .app .ui-win__side { display: none; }
+  .app .ui-win__body { grid-template-columns: minmax(0, 1fr); }
+  .app > .app__pane + .app__pane { border-left: 0; border-top: 1px solid var(--u-line); }
+}
+@media (max-width: 639px) {
+  .app.ui { grid-template-rows: minmax(0, 1fr); }
+  .app > .app__pane--list { display: none; }
+  .app > .app__pane + .app__pane { border-top: 0; }
+}
+
+/* the agent's settings, as the app shows them */
+.kc-set { width: 420px; }
+.kc-set__val { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--u-line); font-size: 13px; font-weight: 500; white-space: nowrap; color: var(--u-ink); }
+@media (max-width: 639px) { .kc-set { width: 100%; } .kc-set .ui-tg__sub { display: none; } }
+
+/* the open dictation fills its pane; the note sits beside the text */
+.app .ui-doc { width: 100%; padding-right: 0; }
+.app .ui-doc__page { padding: 28px 248px 48px 32px; border: 0; border-radius: 0; box-shadow: none; }
+.app .ui-doc__title { font-size: 20px; line-height: 28px; margin-bottom: 16px; }
+.app .ui-doc__text { font-size: 15px; line-height: 25px; }
+.app .ui-doc__text + .ui-doc__text { margin-top: 12px; }
+.app .ui-doc__note { right: 24px; }
+@media (max-width: 639px) { .app .ui-doc__page { padding: 20px 20px 40px; } .app .ui-doc__note { display: none; } }
+
+.kc-out { width: 320px; }
+.kc-out--wide { width: 480px; }
+.kc-out__text + .kc-out__text { padding-top: 10px; border-top: 1px solid var(--u-line); }
+@media (max-width: 639px) { .kc-out, .kc-out--wide { width: 100%; } .kc-out__text--xl { font-size: 20px; } }
+
+/* the name runs from line to line at every width */
+.closing__cta.close--word { container-type: inline-size; }
+.close__word { font-size: 26cqw; white-space: nowrap; }
+
+/* a tablet: two screens, the three smaller cards two to a row */
+@media (min-width: 640px) and (max-width: 1023px) {
+  #languages { --h: 2; }
+  #languages .grid > .span-4 { grid-column: auto / span 6; }
+  #languages .grid > .span-4:last-child { grid-column: 1 / -1; }
+  #languages > .wrap > .grid:last-child, #languages > .wrap > .group > .grid:last-child { align-self: stretch; flex: 1 1 auto; min-height: 0; }
+  #agent > .wrap > .grid { flex: 1 1 auto; }
+  .kc-win__body { grid-template-columns: minmax(0, 1fr); }
+  .kc-notes { display: none; }
+}
+@media (min-width: 1024px) and (max-width: 1099px) { .kc-dl .ui-file__name { font-size: 12px; } }
+/* a phone: the agent takes two screens, one card on each */
+@media (max-width: 639px) {
+  #agent { --hm: 2; }
+  #agent > .wrap { display: grid; grid-template-rows: auto minmax(0, 1fr) calc(100lvh - var(--padt) - var(--padb) - var(--bar)); }
+  #agent > .wrap > .grid { display: contents; }
+  #agent .card:first-child { margin-bottom: calc(var(--padt) + var(--padb) + var(--bar)); }
+}
+/* a short screen: the hero's window drops its first note line so the pasted result still shows */
+@media (max-height: 820px), (max-width: 359px) { .kc-note__line:first-child, .kc-tool { display: none; } }
+@media (max-width: 359px) { .nav:not(.is-open) .nav__bar .btn { display: none; } }
+/* the six installers sit whole in their frame: three to a row, two on a phone */
+.stage > .kc-dl { --w: 500px; }
+.kc-dl .ui-files { min-width: 0; }
+.kc-dl .ui-files__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 639px) {
+  #download .frame--split { --ratio: 92%; }
+  .stage > .kc-dl { width: calc(100% - 48px); max-width: none; }
+  .kc-dl .ui-file { height: 114px; padding-top: 10px; }
+  .kc-dl .ui-file__icon { margin-bottom: 8px; }
+}
+@media (max-width: 359px) {
+  #download .frame--split { --ratio: 170%; }
+  .kc-dl .ui-files__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kc-dl .ui-file { height: 112px; }
+}
+.kc-dl .ui-file { padding-inline: 4px; }
+/* a phone: Questions fits one screen without the line under its heading and the answer the agent section already gives */
+@media (max-width: 639px) { #questions .span-5 > p:first-of-type, #questions .faq__item:nth-child(4) { display: none; } }
+@media (max-width: 639px) { .kc-dl .ui-file__kind { font-size: 11px; white-space: nowrap; } }
+/* the narrowest phone: the hero's window shows whole, without its two chips */
+@media (max-width: 359px) { .kc-acts { display: none; } .hero--centred .hero__window { min-height: 308px; } }
+/* 640 to 1279: the installers' frame and the answers run down to the foot of their screen */
+@media (min-width: 640px) and (max-width: 1279px) {
+  #download > .wrap > .grid { flex: 1 1 auto; }
+  #download .frame--split { --ratio: 0px; align-self: stretch; min-height: 380px; }
+  #questions > .wrap > .grid { flex: 1 1 auto; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  #questions > .wrap > .grid { grid-template-rows: auto minmax(0, 1fr); }
+  #questions .faq { display: grid; grid-auto-rows: 1fr; }
+  #questions .faq > .faq__item { align-content: start; }
+}
+
+/* tablet: a language's output is read, so its panel takes the card's width instead of being cut by the right edge */
+@media (min-width: 640px) and (max-width: 1279px) {
+  #languages .stage > .at-corner { right: var(--ax, 32px); }
+  #languages .stage > .at-corner > .kc-out { width: 100%; }
+  #languages .stage--fade-br { -webkit-mask: linear-gradient(to bottom, #000 calc(100% - var(--fade-h)), transparent calc(100% - 4px)); mask: linear-gradient(to bottom, #000 calc(100% - var(--fade-h)), transparent calc(100% - 4px)); }
+  #languages .kc-out__text--xl { font-size: 22px; }
+}
