@@ -32,6 +32,7 @@ enum Command {
         file: PathBuf,
         #[arg(long)]
         model: Option<String>,
+        /// en, hi, hi-en, gu or gu-en.
         #[arg(long)]
         language: Option<String>,
         /// Print Whisper's text without clean-up steps.
@@ -44,6 +45,9 @@ enum Command {
         seconds: u64,
         #[arg(long)]
         model: Option<String>,
+        /// en, hi, hi-en, gu or gu-en.
+        #[arg(long)]
+        language: Option<String>,
         /// Also save the recording as a WAV file.
         #[arg(long)]
         save: Option<PathBuf>,
@@ -111,6 +115,7 @@ fn main() -> Result<()> {
         Command::Record {
             seconds,
             model,
+            language,
             save,
         } => {
             let recorder = audio::Recorder::new();
@@ -121,7 +126,7 @@ fn main() -> Result<()> {
             if let Some(path) = save {
                 wav::write_16k_mono(&path, &samples)?;
             }
-            let text = run(&settings, model, None, &samples, false)?;
+            let text = run(&settings, model, language, &samples, false)?;
             println!("{text}");
         }
         Command::Devices => {

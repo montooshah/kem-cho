@@ -6,7 +6,7 @@ use serde_json::{Map, Value};
 
 use crate::models::DEFAULT_MODEL;
 use crate::postprocess::Replacement;
-use crate::{agent, paths, postprocess, tts};
+use crate::{agent, languages, models, paths, postprocess, tts};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -48,7 +48,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             model: DEFAULT_MODEL.into(),
-            language: "en".into(),
+            language: languages::DEFAULT_LANGUAGE.into(),
             shortcut: "CommandOrControl+Shift+Space".into(),
             shortcut_mode: ShortcutMode::Hold,
             microphone: None,
@@ -119,7 +119,9 @@ impl Settings {
                 }
             }
         }
-        serde_json::from_value(Value::Object(merged)).unwrap_or_default()
+        serde_json::from_value::<Self>(Value::Object(merged))
+            .unwrap_or_default()
+            .normalized()
     }
 
     pub fn save(&self) -> Result<()> {
@@ -131,6 +133,19 @@ impl Settings {
         std::fs::write(&tmp, serde_json::to_vec_pretty(self)?)?;
         std::fs::rename(tmp, path)?;
         Ok(())
+    }
+
+    /// Replaces an unknown language with English and a model that can't
+    /// transcribe the language with that language's default model.
+    pub fn normalized(mut self) -> Self {
+        let language = languages::find(&self.language)
+            .or_else(|| languages::find(languages::DEFAULT_LANGUAGE))
+            .unwrap();
+        self.language = language.id.into();
+        if !models::find(&self.model).is_ok_and(|m| m.supports(language.whisper)) {
+            self.model = language.default_model.into();
+        }
+        self
     }
 
     pub fn steps(&self) -> postprocess::Steps<'_> {
@@ -167,5 +182,23 @@ mod tests {
         s.save_to(&path).unwrap();
         assert_eq!(Settings::load_from(&path), s);
         std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn language_and_model_stay_compatible() {
+        let fix = |language: &str, model: &str| {
+            let s = Settings {
+                language: language.into(),
+                model: model.into(),
+                ..Settings::default()
+            }
+            .normalized();
+            (s.language, s.model)
+        };
+        assert_eq!(fix("auto", "small"), ("en".into(), "small".into()));
+        assert_eq!(fix("gu-en", "base.en"), ("gu-en".into(), "gu-small".into()));
+        assert_eq!(fix("gu", "small"), ("gu".into(), "small".into()));
+        assert_eq!(fix("en", "hi-small"), ("en".into(), DEFAULT_MODEL.into()));
+        assert_eq!(fix("xx", "nope"), ("en".into(), DEFAULT_MODEL.into()));
     }
 }

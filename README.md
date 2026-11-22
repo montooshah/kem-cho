@@ -66,10 +66,10 @@ Windows and Linux installers and attaches them to a draft GitHub Release.
 
 ## Roadmap
 
-1. **Dictation** in English.
+1. **Dictation** in English, Hindi, Hindi + English, Gujarati and Gujarati + English.
 2. **Voice agent**: talk to a local LLM and hear the reply spoken.
 3. **Dictation and agent together**.
-4. **Gujarati, Hindi** and more languages.
+4. Better Gujarati and code-mixed accuracy, and more languages.
 
 ## Credits
 

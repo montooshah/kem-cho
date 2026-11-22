@@ -73,13 +73,23 @@ export interface TurnDone {
   error: string | null
 }
 
+export interface Language {
+  id: string
+  label: string
+  whisper: string
+  default_model: string
+  hint: string
+}
+
 export interface ModelInfo {
   id: string
   label: string
   file: string
   size_bytes: number
   sha256: string
-  english_only: boolean
+  languages: string[]
+  source: string
+  no_timestamps: boolean
   description: string
   installed: boolean
 }
@@ -114,6 +124,7 @@ export const api = {
   getSettings: () => invoke<Settings>('get_settings'),
   saveSettings: (settings: Settings) => invoke<Settings>('save_settings', { settings }),
   suspendShortcut: (suspended: boolean) => invoke<void>('suspend_shortcut', { suspended }),
+  listLanguages: () => invoke<Language[]>('list_languages'),
   listModels: () => invoke<ModelInfo[]>('list_models'),
   downloadModel: (id: string) => invoke<void>('download_model', { id }),
   deleteModel: (id: string) => invoke<void>('delete_model', { id }),
