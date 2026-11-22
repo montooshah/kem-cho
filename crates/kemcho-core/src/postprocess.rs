@@ -44,11 +44,29 @@ fn replace_word(s: &str, r: &Replacement) -> String {
     if from.is_empty() {
         return s.to_string();
     }
-    let pattern = format!(r"(?:^|\b){}(?:\b|$)", regex::escape(from));
-    match RegexBuilder::new(&pattern).case_insensitive(true).build() {
-        Ok(re) => re.replace_all(s, regex::NoExpand(&r.to)).into_owned(),
-        Err(_) => s.to_string(),
+    let Ok(re) = RegexBuilder::new(&regex::escape(from))
+        .case_insensitive(true)
+        .build()
+    else {
+        return s.to_string();
+    };
+    // Whole words only: no letter or digit may touch either end, which `\b`
+    // gets wrong for terms that start or end in punctuation, like "C++".
+    let is_word = |c: char| c.is_alphanumeric() || c == '_';
+    let mut out = String::with_capacity(s.len());
+    let mut last = 0;
+    for m in re.find_iter(s) {
+        let before = s[..m.start()].chars().next_back();
+        let after = s[m.end()..].chars().next();
+        if before.is_some_and(is_word) || after.is_some_and(is_word) {
+            continue;
+        }
+        out.push_str(&s[last..m.start()]);
+        out.push_str(&r.to);
+        last = m.end();
     }
+    out.push_str(&s[last..]);
+    out
 }
 
 fn voice_commands(s: &str) -> String {
@@ -115,5 +133,19 @@ mod tests {
             ..Default::default()
         };
         assert_eq!(process("one dollar", &steps), "One $1");
+    }
+
+    #[test]
+    fn replaces_terms_ending_in_punctuation() {
+        let reps = vec![Replacement {
+            from: "C++".into(),
+            to: "cpp".into(),
+        }];
+        let steps = Steps {
+            replacements: &reps,
+            ..Default::default()
+        };
+        assert_eq!(process("I use C++ daily", &steps), "I use cpp daily");
+        assert_eq!(process("I use C++17", &steps), "I use C++17");
     }
 }
