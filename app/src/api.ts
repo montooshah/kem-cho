@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core'
 
 export type ShortcutMode = 'hold' | 'toggle'
-export type Phase = 'idle' | 'recording' | 'transcribing'
+export type Phase = 'idle' | 'recording' | 'transcribing' | 'thinking' | 'speaking'
 
 export interface Replacement {
   from: string
@@ -22,6 +22,55 @@ export interface Settings {
   replacements: Replacement[]
   vocabulary: string[]
   onboarded: boolean
+  agent_shortcut: string
+  agent_model: string
+  ollama_url: string
+  agent_voice: string
+  speak_replies: boolean
+  agent_personality: string
+}
+
+export interface AgentStatus {
+  running: boolean
+  version: string | null
+  error: string | null
+  installed: { name: string; size: number }[]
+  suggested: { id: string; label: string }[]
+}
+
+export interface VoiceInfo {
+  id: string
+  label: string
+  size_bytes: number
+  installed: boolean
+}
+
+export interface Voices {
+  neural: boolean
+  voices: VoiceInfo[]
+}
+
+export interface PullProgress {
+  model: string
+  status: string
+  done: number
+  total: number
+}
+
+export interface TurnEvent {
+  id: number
+  question: string
+}
+
+export interface TokenEvent {
+  id: number
+  token: string
+}
+
+export interface TurnDone {
+  id: number
+  reply: string
+  error: string | null
 }
 
 export interface ModelInfo {
@@ -74,6 +123,15 @@ export const api = {
   historyClear: () => invoke<void>('history_clear'),
   copyText: (text: string) => invoke<void>('copy_text', { text }),
   toggleDictation: () => invoke<void>('toggle_dictation'),
+  toggleAgent: () => invoke<void>('toggle_agent'),
+  agentStatus: () => invoke<AgentStatus>('agent_status'),
+  agentPull: (model: string) => invoke<void>('agent_pull', { model }),
+  listVoices: () => invoke<Voices>('list_voices'),
+  downloadVoice: (id: string) => invoke<void>('download_voice', { id }),
+  previewVoice: (id: string) => invoke<void>('preview_voice', { id }),
+  agentAsk: (question: string) => invoke<void>('agent_ask', { question }),
+  agentStop: () => invoke<void>('agent_stop'),
+  agentReset: () => invoke<void>('agent_reset'),
   getStatus: () => invoke<Status>('get_status'),
   appInfo: () => invoke<AppInfo>('app_info'),
 }

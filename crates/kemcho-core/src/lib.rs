@@ -2,6 +2,7 @@
 //! transcript clean-up, settings and history. Nothing here talks to the
 //! network except the explicit model download.
 
+pub mod agent;
 pub mod audio;
 pub mod history;
 pub mod models;
@@ -10,6 +11,7 @@ pub mod postprocess;
 pub mod resample;
 pub mod settings;
 pub mod transcribe;
+pub mod tts;
 pub mod vad;
 pub mod wav;
 

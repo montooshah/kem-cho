@@ -6,7 +6,7 @@ use serde_json::{Map, Value};
 
 use crate::models::DEFAULT_MODEL;
 use crate::postprocess::Replacement;
-use crate::{paths, postprocess};
+use crate::{agent, paths, postprocess, tts};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -34,6 +34,14 @@ pub struct Settings {
     pub replacements: Vec<Replacement>,
     pub vocabulary: Vec<String>,
     pub onboarded: bool,
+    /// Hold (or tap) to ask the voice agent instead of dictating.
+    pub agent_shortcut: String,
+    pub agent_model: String,
+    pub ollama_url: String,
+    pub agent_voice: String,
+    pub speak_replies: bool,
+    /// Instructions for the agent; empty uses the built-in personality.
+    pub agent_personality: String,
 }
 
 impl Default for Settings {
@@ -52,6 +60,12 @@ impl Default for Settings {
             replacements: Vec::new(),
             vocabulary: Vec::new(),
             onboarded: false,
+            agent_shortcut: "CommandOrControl+Shift+K".into(),
+            agent_model: agent::DEFAULT_MODEL.into(),
+            ollama_url: agent::DEFAULT_URL.into(),
+            agent_voice: tts::DEFAULT_VOICE.into(),
+            speak_replies: true,
+            agent_personality: String::new(),
         }
     }
 }

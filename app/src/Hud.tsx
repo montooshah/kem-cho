@@ -3,6 +3,13 @@ import { listen } from '@tauri-apps/api/event'
 import type { Status } from './api'
 
 const BARS = 9
+const LABELS: Record<Status['phase'], string> = {
+  idle: '',
+  recording: '',
+  transcribing: 'Transcribing…',
+  thinking: 'Thinking…',
+  speaking: 'Speaking…',
+}
 
 export default function Hud() {
   const [phase, setPhase] = useState<Status['phase']>('recording')
@@ -24,8 +31,8 @@ export default function Hud() {
   return (
     <div className="hud-pill">
       <span className={`hud-dot ${phase}`} />
-      {phase === 'transcribing' ? (
-        <span className="hud-label">Transcribing…</span>
+      {phase !== 'recording' ? (
+        <span className="hud-label">{LABELS[phase]}</span>
       ) : (
         <div className="hud-bars">
           {levels.map((v, i) => (
