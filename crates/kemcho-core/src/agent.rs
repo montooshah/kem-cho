@@ -4,6 +4,8 @@
 
 use std::io::{BufRead, BufReader};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{self, RecvTimeoutError};
+use std::thread;
 use std::time::Duration;
 
 use anyhow::{Context, Result, anyhow, bail};
@@ -88,10 +90,7 @@ impl Ollama {
     }
 
     fn unreachable(&self, err: ureq::Error) -> anyhow::Error {
-        anyhow!(
-            "Ollama isn't running at {} ({err}). Install it from ollama.com and open it.",
-            self.base
-        )
+        unreachable(&self.base, err)
     }
 
     fn check(response: &mut ureq::http::Response<ureq::Body>) -> Result<()> {
@@ -176,28 +175,49 @@ impl Ollama {
         cancel: &AtomicBool,
         mut on_token: impl FnMut(&str),
     ) -> Result<String> {
-        let mut response = self
-            .agent
-            .post(format!("{}/api/chat", self.base))
-            .send_json(json!({
-                "model": model,
-                "messages": messages,
-                "stream": true,
-                "think": false,
-                "keep_alive": "30m",
-            }))
-            .map_err(|e| self.unreachable(e))?;
-        if response.status() == 404 {
-            bail!("The model `{model}` isn't downloaded in Ollama yet.");
-        }
-        Self::check(&mut response)?;
-        let reader = BufReader::new(response.into_body().into_reader());
+        let body = json!({
+            "model": model,
+            "messages": messages,
+            "stream": true,
+            "think": false,
+            "keep_alive": "30m",
+        });
+        // The blocking request runs on its own thread so `cancel` is seen
+        // even while Ollama is still loading the model.
+        let (tx, rx) = mpsc::channel::<Result<String>>();
+        let (agent, base, model) = (self.agent.clone(), self.base.clone(), model.to_string());
+        thread::spawn(move || {
+            let result = (|| -> Result<()> {
+                let mut response = agent
+                    .post(format!("{base}/api/chat"))
+                    .send_json(body)
+                    .map_err(|e| unreachable(&base, e))?;
+                if response.status() == 404 {
+                    bail!("The model `{model}` isn't downloaded in Ollama yet.");
+                }
+                Self::check(&mut response)?;
+                for line in BufReader::new(response.into_body().into_reader()).lines() {
+                    let line = line.context("reading Ollama's reply")?;
+                    if tx.send(Ok(line)).is_err() {
+                        break;
+                    }
+                }
+                Ok(())
+            })();
+            if let Err(err) = result {
+                let _ = tx.send(Err(err));
+            }
+        });
         let mut reply = String::new();
-        for line in reader.lines() {
+        loop {
             if cancel.load(Ordering::Relaxed) {
                 break;
             }
-            let line = line.context("reading Ollama's reply")?;
+            let line = match rx.recv_timeout(Duration::from_millis(50)) {
+                Ok(line) => line?,
+                Err(RecvTimeoutError::Timeout) => continue,
+                Err(RecvTimeoutError::Disconnected) => break,
+            };
             if line.trim().is_empty() {
                 continue;
             }
@@ -217,6 +237,10 @@ impl Ollama {
         }
         Ok(reply)
     }
+}
+
+fn unreachable(base: &str, err: ureq::Error) -> anyhow::Error {
+    anyhow!("Ollama isn't running at {base} ({err}). Install it from ollama.com and open it.")
 }
 
 /// The running conversation, kept in memory only.
