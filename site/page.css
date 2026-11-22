@@ -122,7 +122,7 @@ kbd { font: 500 .82em/1 var(--font-mono); padding: .2em .45em; border: 1px solid
 }
 /* a short screen: the hero's window drops its first note line so the pasted result still shows */
 @media (max-height: 820px), (max-width: 359px) { .kc-note__line:first-child, .kc-tool { display: none; } }
-@media (max-width: 359px) { .nav__bar .btn { display: none; } }
+@media (max-width: 359px) { .nav:not(.is-open) .nav__bar .btn { display: none; } }
 /* the six installers sit whole in their frame: three to a row, two on a phone */
 .stage > .kc-dl { --w: 500px; }
 .kc-dl .ui-files { min-width: 0; }
