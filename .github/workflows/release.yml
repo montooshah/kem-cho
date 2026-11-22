@@ -33,6 +33,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - name: System packages
         if: startsWith(matrix.platform, 'ubuntu')
         run: |
