@@ -1,3 +1,4 @@
+use std::ffi::c_void;
 use std::path::Path;
 use std::time::{Duration, Instant};
 
@@ -113,7 +114,11 @@ impl Transcriber {
         let seconds = audio.len() as f32 / SAMPLE_RATE as f32;
         let budget = Duration::from_secs(20) + Duration::from_secs_f32(3.0 * seconds);
         let deadline = Instant::now() + budget;
-        params.set_abort_callback_safe(move || Instant::now() > deadline);
+        // SAFETY: `deadline` outlives `state.full`, the only caller of the callback.
+        unsafe {
+            params.set_abort_callback(Some(past_deadline));
+            params.set_abort_callback_user_data(&deadline as *const Instant as *mut c_void);
+        }
 
         let mut state = self.ctx.create_state().context("creating Whisper state")?;
         if let Err(err) = state.full(params, &audio) {
@@ -137,6 +142,11 @@ impl Transcriber {
         }
         Ok(text)
     }
+}
+
+unsafe extern "C" fn past_deadline(deadline: *mut c_void) -> bool {
+    // SAFETY: `decode` passes a pointer to an `Instant` that outlives the decode.
+    Instant::now() > unsafe { *(deadline as *const Instant) }
 }
 
 /// Longest piece a model without timestamps decodes at once: it stops after one
