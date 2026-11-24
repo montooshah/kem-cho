@@ -9,6 +9,9 @@ Audio never leaves your machine.
 
 *Kem cho* means “how are you?” in Gujarati.
 
+Website: [kem-cho.onrender.com](https://kem-cho.onrender.com) ·
+Download: [latest release](https://github.com/montooshah/kem-cho/releases/latest)
+
 ## Features
 
 - Hold-to-talk or tap-to-toggle global shortcut, from the tray.
@@ -25,8 +28,9 @@ Audio never leaves your machine.
   on your computer, and the reply is spoken sentence by sentence as it streams,
   with a [Piper](https://github.com/rhasspy/piper) neural voice (Linux and
   Windows; the system voice on macOS). Press the shortcut again to stop it.
-- A browser version ([`site/try.html`](site/try.html)) that runs Whisper in
-  the tab with transformers.js.
+- A browser version ([try it](https://kem-cho.onrender.com/try.html), source in
+  [`site/try.html`](site/try.html)) that runs Whisper in the tab with
+  transformers.js.
 
 ## Layout
 
@@ -35,7 +39,7 @@ Audio never leaves your machine.
 | `crates/kemcho-core` | Audio capture, resampling, VAD, Whisper, models, clean-up, settings, history, Ollama agent (`agent`), speech output (`tts`) |
 | `crates/kemcho-cli` | `kemcho` command-line tool |
 | `app/` | Tauri 2 desktop app (React front end, Rust in `app/src-tauri`) |
-| `site/` | Landing page and browser demo, deployed to Render (`render.yaml`) |
+| `site/` | Landing page and browser demo, deployed to [Render](https://kem-cho.onrender.com) (`render.yaml`) |
 
 ## Develop
 
