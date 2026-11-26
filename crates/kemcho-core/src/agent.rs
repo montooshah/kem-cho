@@ -243,6 +243,52 @@ fn unreachable(base: &str, err: ureq::Error) -> anyhow::Error {
     anyhow!("Ollama isn't running at {base} ({err}). Install it from ollama.com and open it.")
 }
 
+const WRITER: &str = "You write text for the user. It is pasted straight into whatever they are typing in, \
+so reply with only that text: no greeting to the user, no explanation, no quotation marks around it, no placeholders like [Your Name], and no markdown unless they ask for it. \
+Write in the language and script the user asks for, and otherwise in the language of their request.";
+
+const EDITOR: &str = "You rewrite text the user has selected. Your reply replaces the selection, \
+so reply with only the rewritten text: no explanation, no quotation marks around it, and no markdown unless the original has it. \
+Keep the meaning and the language unless the instruction says otherwise.";
+
+/// The messages that ask for text to paste: new text from `instruction`,
+/// or `selection` rewritten as it says.
+pub fn writing_prompt(instruction: &str, selection: Option<&str>) -> Vec<Message> {
+    let (system, user) = match selection {
+        Some(text) => (
+            EDITOR,
+            format!("Instruction: {instruction}\n\nText:\n{text}"),
+        ),
+        None => (WRITER, instruction.to_string()),
+    };
+    vec![
+        Message {
+            role: "system".into(),
+            content: system.into(),
+        },
+        Message::user(user),
+    ]
+}
+
+/// A model's written reply as it should be pasted: without a code fence or
+/// quotation marks wrapped around the whole of it.
+pub fn tidy_written(reply: &str) -> String {
+    let mut text = reply.trim();
+    if let Some(inner) = text.strip_prefix("```") {
+        let inner = inner.split_once('\n').map_or("", |(_, body)| body);
+        text = inner.trim_end().strip_suffix("```").unwrap_or(inner).trim();
+    }
+    for (open, close) in [('"', '"'), ('“', '”')] {
+        if let Some(inner) = text.strip_prefix(open).and_then(|t| t.strip_suffix(close))
+            && !inner.contains(open)
+            && !inner.contains(close)
+        {
+            text = inner.trim();
+        }
+    }
+    text.to_string()
+}
+
 /// The running conversation, kept in memory only.
 #[derive(Debug, Default, Clone)]
 pub struct Conversation {
@@ -328,6 +374,18 @@ pub fn speakable(text: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn written_text_loses_its_wrapping() {
+        assert_eq!(tidy_written("  Thanks, Priya!  "), "Thanks, Priya!");
+        assert_eq!(tidy_written("\"Thanks, Priya!\""), "Thanks, Priya!");
+        assert_eq!(tidy_written("“Dear team”"), "Dear team");
+        assert_eq!(tidy_written("```text\nDear team\n```"), "Dear team");
+        assert_eq!(
+            tidy_written("\"Hi\" she said, \"bye\""),
+            "\"Hi\" she said, \"bye\""
+        );
+    }
 
     #[test]
     fn sentences_split_as_they_stream() {

@@ -42,6 +42,8 @@ pub struct Settings {
     pub speak_replies: bool,
     /// Instructions for the agent; empty uses the built-in personality.
     pub agent_personality: String,
+    /// Dictation that starts with “Kem cho” goes to the agent.
+    pub agent_commands: bool,
 }
 
 impl Default for Settings {
@@ -66,6 +68,7 @@ impl Default for Settings {
             agent_voice: tts::DEFAULT_VOICE.into(),
             speak_replies: true,
             agent_personality: String::new(),
+            agent_commands: true,
         }
     }
 }

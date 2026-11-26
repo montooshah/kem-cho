@@ -34,16 +34,39 @@ impl Paster {
         };
         self.copy(text)?;
         thread::sleep(Duration::from_millis(60));
-        send_paste_keys()?;
+        send_shortcut('v')?;
         if let Some(previous) = previous {
             thread::sleep(Duration::from_millis(400));
             self.copy(&previous)?;
         }
         Ok(())
     }
+
+    /// The text selected in the focused app, read by sending the copy
+    /// shortcut; the clipboard is put back afterwards.
+    pub fn selection(&mut self) -> Result<Option<String>> {
+        let previous = self.clipboard()?.get_text().ok();
+        self.clipboard()?.clear()?;
+        send_shortcut('c')?;
+        let mut selected = None;
+        for _ in 0..10 {
+            thread::sleep(Duration::from_millis(30));
+            if let Ok(text) = self.clipboard()?.get_text()
+                && !text.trim().is_empty()
+            {
+                selected = Some(text);
+                break;
+            }
+        }
+        match previous {
+            Some(previous) => self.copy(&previous)?,
+            None => self.clipboard()?.clear()?,
+        }
+        Ok(selected)
+    }
 }
 
-fn send_paste_keys() -> Result<()> {
+fn send_shortcut(key: char) -> Result<()> {
     let mut enigo =
         Enigo::new(&enigo::Settings::default()).context("starting keyboard simulation")?;
     let modifier = if cfg!(target_os = "macos") {
@@ -52,7 +75,7 @@ fn send_paste_keys() -> Result<()> {
         Key::Control
     };
     enigo.key(modifier, Direction::Press)?;
-    let result = enigo.key(Key::Unicode('v'), Direction::Click);
+    let result = enigo.key(Key::Unicode(key), Direction::Click);
     enigo.key(modifier, Direction::Release)?;
     result?;
     Ok(())

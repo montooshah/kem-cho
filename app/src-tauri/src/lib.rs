@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 
 use kemcho_core::agent::Conversation;
 use kemcho_core::history::{self, Entry, History};
+use kemcho_core::intent::{self, Intent};
 use kemcho_core::models::{self, Model};
 use kemcho_core::settings::{Settings, ShortcutMode};
 use kemcho_core::transcribe::Options;
@@ -21,6 +22,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 mod agent;
 mod paste;
+mod write;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -203,12 +205,13 @@ fn stop_recording(app: &AppHandle) {
         return;
     }
     thread::spawn(move || {
-        let message = match finish(&app) {
-            Ok(Some(entry)) => {
+        let message = match dictate(&app) {
+            Ok(Outcome::Answered) => return,
+            Ok(Outcome::Pasted(entry)) => {
                 let _ = app.emit("dictation", entry);
                 None
             }
-            Ok(None) => Some("No speech heard.".to_string()),
+            Ok(Outcome::Quiet(message)) => Some(message.to_string()),
             Err(err) => {
                 tracing::error!("dictation failed: {err:#}");
                 Some(format!("{err:#}"))
@@ -251,7 +254,10 @@ fn hear(app: &AppHandle) -> anyhow::Result<Option<Heard>> {
     let Some(speech) = vad::trim(&samples, vad::DEFAULT_MIN_RMS) else {
         return Ok(None);
     };
-    let settings = state.settings.lock().unwrap().clone();
+    let mut settings = state.settings.lock().unwrap().clone();
+    if settings.agent_commands {
+        settings.vocabulary.push("Kem cho".into());
+    }
     let model = models::find(&settings.model)?;
     let transcript = {
         let mut slot = state.transcriber.lock().unwrap();
@@ -278,26 +284,77 @@ fn hear(app: &AppHandle) -> anyhow::Result<Option<Heard>> {
     }))
 }
 
-fn finish(app: &AppHandle) -> anyhow::Result<Option<Entry>> {
+enum Outcome {
+    Pasted(Entry),
+    Quiet(&'static str),
+    /// The agent took the request and answered out loud.
+    Answered,
+}
+
+/// Transcribes a dictation and pastes it, or what the agent wrote when it
+/// starts with “Kem cho”.
+fn dictate(app: &AppHandle) -> anyhow::Result<Outcome> {
     let state = app.state::<AppState>();
-    let Some(Heard {
-        text,
+    let Some(heard) = hear(app)? else {
+        return Ok(Outcome::Quiet("No speech heard."));
+    };
+    let intent = if state.settings.lock().unwrap().agent_commands {
+        intent::parse(&heard.text)
+    } else {
+        Intent::Dictate
+    };
+    let written = match intent {
+        Intent::Dictate => return keep(app, heard.text.clone(), &heard).map(Outcome::Pasted),
+        Intent::Write(instruction) => write::compose(app, &instruction, None)?,
+        Intent::Ask {
+            request,
+            about_selection,
+        } => {
+            let selection = if about_selection {
+                state
+                    .paster
+                    .lock()
+                    .unwrap()
+                    .selection()
+                    .unwrap_or_else(|err| {
+                        tracing::warn!("reading the selection: {err:#}");
+                        None
+                    })
+            } else {
+                None
+            };
+            let Some(selection) = selection else {
+                state.cancel.store(false, Ordering::Relaxed);
+                agent::answer(app, request);
+                return Ok(Outcome::Answered);
+            };
+            write::compose(app, &request, Some(&selection))?
+        }
+    };
+    match written {
+        Some(text) => keep(app, text, &heard).map(Outcome::Pasted),
+        None => Ok(Outcome::Quiet("Stopped.")),
+    }
+}
+
+/// Saves `text` to history and pastes it.
+fn keep(app: &AppHandle, text: String, heard: &Heard) -> anyhow::Result<Entry> {
+    let state = app.state::<AppState>();
+    let Heard {
         raw,
         model,
         audio_ms,
         transcribe_ms,
-    }) = hear(app)?
-    else {
-        return Ok(None);
-    };
+        ..
+    } = heard;
     let settings = state.settings.lock().unwrap().clone();
     let entry = Entry {
         id: history::now_ms(),
         text,
-        raw,
+        raw: raw.clone(),
         model: model.id.to_string(),
-        audio_ms,
-        transcribe_ms,
+        audio_ms: *audio_ms,
+        transcribe_ms: *transcribe_ms,
     };
     // Saved before pasting so a clipboard failure doesn't lose the text.
     if settings.history_days > 0
@@ -314,7 +371,7 @@ fn finish(app: &AppHandle) -> anyhow::Result<Option<Entry>> {
             paster.copy(&entry.text)?;
         }
     }
-    Ok(Some(entry))
+    Ok(entry)
 }
 
 fn on_shortcut(app: &AppHandle, shortcut: &Shortcut, pressed: bool) {

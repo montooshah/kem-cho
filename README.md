@@ -28,6 +28,10 @@ Download: [latest release](https://github.com/montooshah/kem-cho/releases/latest
   on your computer, and the reply is spoken sentence by sentence as it streams,
   with a [Piper](https://github.com/rhasspy/piper) neural voice (Linux and
   Windows; the system voice on macOS). Press the shortcut again to stop it.
+- “Kem cho” commands, on the dictation shortcut: start with “Kem cho, …” to
+  ask a question out loud, “Kem cho, write …” to have the text written and
+  pasted, or select text and say “Kem cho, make this formal” to rewrite it in
+  place. Turn them off on the Agent page.
 - A browser version ([try it](https://kem-cho.onrender.com/try.html), source in
   [`site/try.html`](site/try.html)) that runs Whisper in the tab with
   transformers.js.
@@ -72,7 +76,7 @@ Windows and Linux installers and attaches them to a draft GitHub Release.
 
 1. **Dictation** in English, Hindi, Hindi + English, Gujarati and Gujarati + English.
 2. **Voice agent**: talk to a local LLM and hear the reply spoken.
-3. **Dictation and agent together**.
+3. **Dictation and agent together**: “Kem cho, …” commands.
 4. Better Gujarati and code-mixed accuracy, and more languages.
 
 ## Credits
