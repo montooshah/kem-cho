@@ -31,9 +31,14 @@ static WRITE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)^(?:please\s+)?(?:write|draft|compose|type|likho|lakho|लिखो|લખો)\b").unwrap()
 });
 
-static SELECTION: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)\b(?:this|that|it|these|selection|selected|ise|isko|यह|ये|इसे|इसको|આ|આને)\b")
-        .unwrap()
+// An edit of the selection: an English request that starts with an editing
+// verb, or a Hindi or Gujarati one that does something to “this” (isko, આને).
+// Questions such as “how does it rain?” are answered out loud instead.
+static EDIT: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?i)^(?:please\s+)?(?:make|rewrite|rephrase|reword|translate|fix|correct|proofread|shorten|summari[sz]e|simplify|expand|improve|polish|turn|convert|change|format|edit)\b|\b(?:ise|isko|isey|aane|aa ne|इसे|इसको|આને)\b",
+    )
+    .unwrap()
 });
 
 /// What a finished dictation asks for.
@@ -49,7 +54,7 @@ pub fn parse(text: &str) -> Intent {
         Intent::Write(request)
     } else {
         Intent::Ask {
-            about_selection: SELECTION.is_match(&request),
+            about_selection: EDIT.is_match(&request),
             request,
         }
     }
@@ -122,6 +127,27 @@ mod tests {
         assert_eq!(
             parse("Kencho, translate this into Hindi."),
             ask("Translate this into Hindi.", true)
+        );
+        assert_eq!(
+            parse("Kem cho, isko formal banao"),
+            ask("Isko formal banao", true)
+        );
+        assert_eq!(parse("કેમ છો, આને ટૂંકું કરો"), ask("આને ટૂંકું કરો", true));
+    }
+
+    #[test]
+    fn questions_about_it_are_answered() {
+        assert_eq!(
+            parse("Kem cho, how does it rain?"),
+            ask("How does it rain?", false)
+        );
+        assert_eq!(
+            parse("Kem cho, what does this mean?"),
+            ask("What does this mean?", false)
+        );
+        assert_eq!(
+            parse("Kem cho, is that right?"),
+            ask("Is that right?", false)
         );
     }
 }
