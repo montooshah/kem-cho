@@ -51,7 +51,7 @@ static EDIT_TARGET: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 static EDIT_INDIC: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)\b(?:ise|isko|isey|aane|aa\s+ne|इसे|इसको|આ\s*ને)\b").unwrap());
+    LazyLock::new(|| Regex::new(r"(?i)\b(?:ise|isko|isey|aane|इसे|इसको|આને)\b").unwrap());
 
 fn is_edit(request: &str) -> bool {
     let bare = EDIT_VERB
@@ -169,6 +169,8 @@ mod tests {
             parse("Kem cho, is that right?"),
             ask("Is that right?", false)
         );
+        // “ને” also means “and”: “આ ને તે” is “this and that”.
+        assert_eq!(parse("કેમ છો, આ ને તે શું છે?"), ask("આ ને તે શું છે?", false));
         assert_eq!(
             parse("Kem cho, convert 10 miles to kilometres."),
             ask("Convert 10 miles to kilometres.", false)
@@ -186,10 +188,5 @@ mod tests {
             ask("Please fix the grammar.", true)
         );
         assert_eq!(parse("Kem cho, proofread."), ask("Proofread.", true));
-        assert_eq!(
-            parse("Kem cho, aa ne formal karo"),
-            ask("Aa ne formal karo", true)
-        );
-        assert_eq!(parse("કેમ છો, આ ને ટૂંકું કરો"), ask("આ ને ટૂંકું કરો", true));
     }
 }
