@@ -43,27 +43,45 @@ impl Paster {
     }
 
     /// The text selected in the focused app, read by sending the copy
-    /// shortcut; the clipboard is put back afterwards.
+    /// shortcut; the clipboard's text or image is put back afterwards.
     pub fn selection(&mut self) -> Result<Option<String>> {
-        let previous = self.clipboard()?.get_text().ok();
+        let saved = {
+            let clipboard = self.clipboard()?;
+            match clipboard.get_text() {
+                Ok(text) => Saved::Text(text),
+                Err(_) => clipboard.get_image().map_or(Saved::Empty, Saved::Image),
+            }
+        };
         self.clipboard()?.clear()?;
-        send_shortcut('c')?;
-        let mut selected = None;
+        let selected = send_shortcut('c').and_then(|()| self.copied_text());
+        let restored = match saved {
+            Saved::Text(text) => self.copy(&text),
+            Saved::Image(image) => Ok(self.clipboard()?.set_image(image)?),
+            Saved::Empty => Ok(self.clipboard()?.clear()?),
+        };
+        let selected = selected?;
+        restored?;
+        Ok(selected)
+    }
+
+    /// Waits briefly for the focused app to answer the copy shortcut.
+    fn copied_text(&mut self) -> Result<Option<String>> {
         for _ in 0..10 {
             thread::sleep(Duration::from_millis(30));
             if let Ok(text) = self.clipboard()?.get_text()
                 && !text.trim().is_empty()
             {
-                selected = Some(text);
-                break;
+                return Ok(Some(text));
             }
         }
-        match previous {
-            Some(previous) => self.copy(&previous)?,
-            None => self.clipboard()?.clear()?,
-        }
-        Ok(selected)
+        Ok(None)
     }
+}
+
+enum Saved {
+    Text(String),
+    Image(arboard::ImageData<'static>),
+    Empty,
 }
 
 fn send_shortcut(key: char) -> Result<()> {
