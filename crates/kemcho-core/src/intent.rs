@@ -32,14 +32,30 @@ static WRITE: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 // An edit of the selection: an English request that starts with an editing
-// verb, or a Hindi or Gujarati one that does something to “this” (isko, આને).
-// Questions such as “how does it rain?” are answered out loud instead.
-static EDIT: LazyLock<Regex> = LazyLock::new(|| {
+// verb and points at the text (“make this formal”, “could you fix the
+// grammar”), or a Hindi or Gujarati one that does something to “this”
+// (isko, આને). Questions such as “how does it rain?” or “convert 10 miles to
+// kilometres” are answered out loud instead.
+static EDIT_VERB: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r"(?i)^(?:please\s+)?(?:make|rewrite|rephrase|reword|translate|fix|correct|proofread|shorten|summari[sz]e|simplify|expand|improve|polish|turn|convert|change|format|edit)\b|\b(?:ise|isko|isey|aane|aa ne|इसे|इसको|આને)\b",
+        r"(?i)^(?:(?:please|can you|could you|would you|will you)\s+)*(?:make|rewrite|rephrase|reword|translate|fix|correct|proofread|shorten|summari[sz]e|simplify|expand|improve|polish|turn|convert|change|format|edit)\b",
     )
     .unwrap()
 });
+
+static EDIT_TARGET: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?i)\b(?:this|that|it|these|those|selection|selected|text|sentence|paragraph|email|message|grammar|spelling|wording|tone)\b",
+    )
+    .unwrap()
+});
+
+static EDIT_INDIC: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)\b(?:ise|isko|isey|aane|इसे|इसको|આને)\b").unwrap());
+
+fn is_edit(request: &str) -> bool {
+    (EDIT_VERB.is_match(request) && EDIT_TARGET.is_match(request)) || EDIT_INDIC.is_match(request)
+}
 
 /// What a finished dictation asks for.
 pub fn parse(text: &str) -> Intent {
@@ -54,7 +70,7 @@ pub fn parse(text: &str) -> Intent {
         Intent::Write(request)
     } else {
         Intent::Ask {
-            about_selection: EDIT.is_match(&request),
+            about_selection: is_edit(&request),
             request,
         }
     }
@@ -148,6 +164,22 @@ mod tests {
         assert_eq!(
             parse("Kem cho, is that right?"),
             ask("Is that right?", false)
+        );
+        assert_eq!(
+            parse("Kem cho, convert 10 miles to kilometres."),
+            ask("Convert 10 miles to kilometres.", false)
+        );
+    }
+
+    #[test]
+    fn polite_edits_rewrite() {
+        assert_eq!(
+            parse("Kem cho, could you make this more formal?"),
+            ask("Could you make this more formal?", true)
+        );
+        assert_eq!(
+            parse("Kem cho, please fix the grammar."),
+            ask("Please fix the grammar.", true)
         );
     }
 }
