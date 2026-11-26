@@ -51,10 +51,14 @@ static EDIT_TARGET: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 static EDIT_INDIC: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(?i)\b(?:ise|isko|isey|aane|इसे|इसको|આને)\b").unwrap());
+    LazyLock::new(|| Regex::new(r"(?i)\b(?:ise|isko|isey|aane|aa\s+ne|इसे|इसको|આ\s*ને)\b").unwrap());
 
 fn is_edit(request: &str) -> bool {
-    (EDIT_VERB.is_match(request) && EDIT_TARGET.is_match(request)) || EDIT_INDIC.is_match(request)
+    let bare = EDIT_VERB
+        .find(request)
+        .is_some_and(|verb| !request[verb.end()..].chars().any(char::is_alphanumeric));
+    (EDIT_VERB.is_match(request) && (bare || EDIT_TARGET.is_match(request)))
+        || EDIT_INDIC.is_match(request)
 }
 
 /// What a finished dictation asks for.
@@ -181,5 +185,11 @@ mod tests {
             parse("Kem cho, please fix the grammar."),
             ask("Please fix the grammar.", true)
         );
+        assert_eq!(parse("Kem cho, proofread."), ask("Proofread.", true));
+        assert_eq!(
+            parse("Kem cho, aa ne formal karo"),
+            ask("Aa ne formal karo", true)
+        );
+        assert_eq!(parse("કેમ છો, આ ને ટૂંકું કરો"), ask("આ ને ટૂંકું કરો", true));
     }
 }
