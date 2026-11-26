@@ -28,6 +28,7 @@ export interface Settings {
   agent_voice: string
   speak_replies: boolean
   agent_personality: string
+  agent_commands: boolean
 }
 
 export interface AgentStatus {

@@ -34,16 +34,57 @@ impl Paster {
         };
         self.copy(text)?;
         thread::sleep(Duration::from_millis(60));
-        send_paste_keys()?;
+        send_shortcut('v')?;
         if let Some(previous) = previous {
             thread::sleep(Duration::from_millis(400));
             self.copy(&previous)?;
         }
         Ok(())
     }
+
+    /// The text selected in the focused app, read by sending the copy
+    /// shortcut; the clipboard's text or image is put back afterwards.
+    pub fn selection(&mut self) -> Result<Option<String>> {
+        let saved = {
+            let clipboard = self.clipboard()?;
+            match clipboard.get_text() {
+                Ok(text) => Saved::Text(text),
+                Err(_) => clipboard.get_image().map_or(Saved::Empty, Saved::Image),
+            }
+        };
+        self.clipboard()?.clear()?;
+        let selected = send_shortcut('c').and_then(|()| self.copied_text());
+        let restored = match saved {
+            Saved::Text(text) => self.copy(&text),
+            Saved::Image(image) => Ok(self.clipboard()?.set_image(image)?),
+            Saved::Empty => Ok(self.clipboard()?.clear()?),
+        };
+        let selected = selected?;
+        restored?;
+        Ok(selected)
+    }
+
+    /// Waits briefly for the focused app to answer the copy shortcut.
+    fn copied_text(&mut self) -> Result<Option<String>> {
+        for _ in 0..10 {
+            thread::sleep(Duration::from_millis(30));
+            if let Ok(text) = self.clipboard()?.get_text()
+                && !text.trim().is_empty()
+            {
+                return Ok(Some(text));
+            }
+        }
+        Ok(None)
+    }
 }
 
-fn send_paste_keys() -> Result<()> {
+enum Saved {
+    Text(String),
+    Image(arboard::ImageData<'static>),
+    Empty,
+}
+
+fn send_shortcut(key: char) -> Result<()> {
     let mut enigo =
         Enigo::new(&enigo::Settings::default()).context("starting keyboard simulation")?;
     let modifier = if cfg!(target_os = "macos") {
@@ -52,7 +93,7 @@ fn send_paste_keys() -> Result<()> {
         Key::Control
     };
     enigo.key(modifier, Direction::Press)?;
-    let result = enigo.key(Key::Unicode('v'), Direction::Click);
+    let result = enigo.key(Key::Unicode(key), Direction::Click);
     enigo.key(modifier, Direction::Release)?;
     result?;
     Ok(())

@@ -145,7 +145,8 @@ export default function App() {
             refreshModels={refreshModels}
           />
         )}
-        {pane === "agent" && (
+        {/* Kept mounted so replies to "Kem cho, …" dictations aren't lost. */}
+        <div hidden={pane !== "agent"}>
           <Agent
             settings={settings}
             save={save}
@@ -153,7 +154,7 @@ export default function App() {
             os={info.os}
             onError={setError}
           />
-        )}
+        </div>
         {pane === "output" && <Output settings={settings} save={save} />}
         {pane === "history" && (
           <History settings={settings} save={save} last={last} />
@@ -438,6 +439,15 @@ function Agent({
             </option>
           ))}
         </select>
+      </Row>
+      <Row
+        title="“Kem cho” commands"
+        hint="Start a dictation with “Kem cho” to ask a question, “Kem cho, write …” to have text written for you, or select text and say “Kem cho, make this formal”."
+      >
+        <Toggle
+          checked={settings.agent_commands}
+          onChange={(agent_commands) => save({ ...settings, agent_commands })}
+        />
       </Row>
       <Row title="Speak replies" hint="Off: replies are only shown here.">
         <Toggle

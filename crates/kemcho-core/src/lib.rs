@@ -5,6 +5,7 @@
 pub mod agent;
 pub mod audio;
 pub mod history;
+pub mod intent;
 pub mod languages;
 pub mod models;
 pub mod paths;
